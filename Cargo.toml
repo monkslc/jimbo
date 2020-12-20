@@ -1,0 +1,10 @@
+[package]
+name = "game"
+version = "0.1.0"
+authors = ["monkslc <monkslc@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+bevy = "0.4.0"
+euclid = "0.22.1"
+lyon = { version = "0.16.2" }
