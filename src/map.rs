@@ -25,7 +25,7 @@ fn create_map(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     load_level(
-        FilePath::new("levels/2.lvl"),
+        FilePath::new("levels/multi-color.lvl"),
         commands,
         &materials,
         &mut meshes,
@@ -256,12 +256,16 @@ pub fn spawn_orb(
     coordinate: Coordinate,
 ) {
     let material = match laser_type {
-        LaserType::Red => materials.orb_red.clone(),
-        LaserType::Blue => materials.orb_blue.clone(),
+        LaserType::Red => materials.orb_red_deactivated.clone(),
+        LaserType::Blue => materials.orb_blue_deactivated.clone(),
     };
     commands
         .spawn(SpriteBundle {
             material,
+            sprite: Sprite {
+                size: Default::default(),
+                resize_mode: SpriteResizeMode::Manual,
+            },
             ..Default::default()
         })
         .with(Orb(false, laser_type))

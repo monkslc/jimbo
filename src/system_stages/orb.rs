@@ -22,8 +22,14 @@ pub fn orb_update(
 
     'outer: for (mut orb, coord, mut material) in orb_q.iter_mut() {
         let (deactivated, activated) = match orb.1 {
-            LaserType::Red => (materials.orb_red.clone(), materials.laser_red.clone()),
-            LaserType::Blue => (materials.orb_blue.clone(), materials.laser_blue.clone()),
+            LaserType::Red => (
+                materials.orb_red_deactivated.clone(),
+                materials.orb_red_activated.clone(),
+            ),
+            LaserType::Blue => (
+                materials.orb_blue_deactivated.clone(),
+                materials.orb_blue_activated.clone(),
+            ),
         };
         for laser in laser_q.iter() {
             let Laser(_, laser_type, end) = laser;
