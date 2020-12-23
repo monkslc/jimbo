@@ -66,10 +66,10 @@ static LEVELS: [&str; 10] = [
     "levels/3.lvl",
     "levels/multi-color.lvl",
     "levels/playground.lvl",
+    "levels/playground-option-2.lvl",
     "levels/scene-test.lvl",
     "levels/standoff.lvl",
     "levels/trapped-orb.lvl",
-    "",
     "",
 ];
 
