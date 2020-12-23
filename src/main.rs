@@ -13,6 +13,7 @@ fn main() {
             height: 700.0,
             ..Default::default()
         })
+        .add_event::<map::LevelChangeEvent>()
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
         .add_plugin(MaterialsPlugin)

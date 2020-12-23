@@ -37,15 +37,14 @@ fn laser_path_adjustment(
         let Laser(source, _, _) = *(laser.0);
         let mesh_handle = laser.1;
 
-        let (LaserSource(direction, _), start) = laser_sources_q
-            .get(source)
-            .expect("Laser should've had a source");
-        let (path, end) =
-            compute_laser_path(window, *start, *direction, &tracker, &opaque_q, &refactor_q);
-        let mesh = path_to_mesh(&path);
-        let old_mesh = meshes.get_mut(mesh_handle).unwrap();
-        *old_mesh = mesh;
-        laser.0 .2 = end;
+        if let Ok((LaserSource(direction, _), start)) = laser_sources_q.get(source) {
+            let (path, end) =
+                compute_laser_path(window, *start, *direction, &tracker, &opaque_q, &refactor_q);
+            let mesh = path_to_mesh(&path);
+            let old_mesh = meshes.get_mut(mesh_handle).unwrap();
+            *old_mesh = mesh;
+            laser.0 .2 = end;
+        }
     }
 }
 

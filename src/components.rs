@@ -76,6 +76,9 @@ pub struct LaserSource(pub crate::Direction, pub LaserType);
 pub struct Laser(pub Entity, pub LaserType, pub Coordinate);
 
 #[derive(Debug, Copy, Clone)]
+pub struct LevelObject;
+
+#[derive(Debug, Copy, Clone)]
 pub struct Movable(pub bool);
 
 #[derive(Debug, Copy, Clone)]

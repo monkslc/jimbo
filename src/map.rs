@@ -14,18 +14,94 @@ pub struct MapBuilderPlugin;
 
 impl Plugin for MapBuilderPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_startup_stage("map_building", SystemStage::parallel());
-        app.add_startup_system_to_stage("map_building", create_map.system());
+        app.add_startup_stage("initial_level_load", SystemStage::parallel());
+        app.add_startup_system_to_stage("initial_level_load", initial_level.system());
+        app.add_system(change_level.system());
+        app.add_system_to_stage(stage::PRE_UPDATE, level_change.system());
     }
 }
 
-fn create_map(
+pub fn change_level(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut my_events: ResMut<Events<LevelChangeEvent>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Key1) {
+        println!("Changing to level 1");
+        my_events.send(LevelChangeEvent(0));
+    } else if keyboard_input.just_pressed(KeyCode::Key2) {
+        println!("Changing to level 2");
+        my_events.send(LevelChangeEvent(1));
+    } else if keyboard_input.just_pressed(KeyCode::Key3) {
+        println!("Changing to level 3");
+        my_events.send(LevelChangeEvent(2));
+    } else if keyboard_input.just_pressed(KeyCode::Key4) {
+        println!("Changing to level 4");
+        my_events.send(LevelChangeEvent(3));
+    } else if keyboard_input.just_pressed(KeyCode::Key5) {
+        println!("Changing to level 5");
+        my_events.send(LevelChangeEvent(4));
+    } else if keyboard_input.just_pressed(KeyCode::Key6) {
+        println!("Changing to level 6");
+        my_events.send(LevelChangeEvent(5));
+    } else if keyboard_input.just_pressed(KeyCode::Key7) {
+        println!("Changing to level 7");
+        my_events.send(LevelChangeEvent(6));
+    } else if keyboard_input.just_pressed(KeyCode::Key8) {
+        println!("Changing to level 8");
+        my_events.send(LevelChangeEvent(7));
+    } else if keyboard_input.just_pressed(KeyCode::Key9) {
+        println!("Changing to level 9");
+        my_events.send(LevelChangeEvent(8));
+    } else if keyboard_input.just_pressed(KeyCode::Key0) {
+        println!("Changing to level 10");
+        my_events.send(LevelChangeEvent(9));
+    }
+}
+
+pub struct LevelChangeEvent(pub usize);
+
+static LEVELS: [&str; 10] = [
+    "levels/1.lvl",
+    "levels/2.lvl",
+    "levels/3.lvl",
+    "levels/multi-color.lvl",
+    "levels/playground.lvl",
+    "levels/scene-test.lvl",
+    "levels/standoff.lvl",
+    "levels/trapped-orb.lvl",
+    "",
+    "",
+];
+
+fn level_change(
+    commands: &mut Commands,
+    materials: Res<Materials>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut event_reader: Local<EventReader<LevelChangeEvent>>,
+    events: Res<Events<LevelChangeEvent>>,
+    entities: Query<Entity, With<LevelObject>>,
+) {
+    if let Some(latest_change) = event_reader.latest(&events) {
+        for ent in entities.iter() {
+            commands.despawn(ent);
+        }
+
+        load_level(
+            std::path::Path::new(LEVELS[latest_change.0]),
+            commands,
+            &materials,
+            &mut meshes,
+        );
+    }
+}
+
+fn initial_level(
     commands: &mut Commands,
     materials: Res<Materials>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     load_level(
-        FilePath::new("levels/trapped-orb.lvl"),
+        FilePath::new("levels/1.lvl"),
         commands,
         &materials,
         &mut meshes,
@@ -125,6 +201,7 @@ pub fn spawn_tile(commands: &mut Commands, materials: &Res<Materials>, coordinat
             material: materials.tile.clone(),
             ..Default::default()
         })
+        .with(LevelObject)
         .with(Tile)
         .with(crate::Size {
             width: 0.1,
@@ -143,6 +220,7 @@ pub fn spawn_crate(commands: &mut Commands, materials: &Res<Materials>, coordina
             },
             ..Default::default()
         })
+        .with(LevelObject)
         .with(Crate)
         .with(Movable(true))
         .with(coordinate)
@@ -163,6 +241,7 @@ pub fn spawn_wall(commands: &mut Commands, materials: &Res<Materials>, coordinat
             },
             ..Default::default()
         })
+        .with(LevelObject)
         .with(Wall)
         .with(Movable(false))
         .with(coordinate)
@@ -201,6 +280,7 @@ pub fn spawn_laser_source(
             },
             ..Default::default()
         })
+        .with(LevelObject)
         .with(LaserSource(direction, laser_type))
         .with(Movable(true))
         .with(coordinate)
@@ -227,6 +307,7 @@ pub fn spawn_laser_source(
             },
             ..Default::default()
         })
+        .with(LevelObject)
         .with(Laser(source, laser_type, coordinate));
 }
 
@@ -240,6 +321,7 @@ pub fn spawn_jimbo(commands: &mut Commands, materials: &Res<Materials>, coordina
             },
             ..Default::default()
         })
+        .with(LevelObject)
         .with(Jimbo)
         .with(Opaque)
         .with(coordinate)
@@ -268,6 +350,7 @@ pub fn spawn_orb(
             },
             ..Default::default()
         })
+        .with(LevelObject)
         .with(Orb(false, laser_type))
         .with(Opaque)
         .with(Movable(false))
@@ -300,6 +383,7 @@ pub fn spawn_refactor(
             },
             ..Default::default()
         })
+        .with(LevelObject)
         .with(Refactor)
         .with(Movable(true))
         .with(coordinate)
