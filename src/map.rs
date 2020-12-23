@@ -25,7 +25,7 @@ fn create_map(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     load_level(
-        FilePath::new("levels/multi-color.lvl"),
+        FilePath::new("levels/trapped-orb.lvl"),
         commands,
         &materials,
         &mut meshes,
