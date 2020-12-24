@@ -5,8 +5,7 @@ use game::*;
 
 fn main() {
     App::build()
-        .add_resource(Msaa { samples: 4 })
-        .add_resource(ClearColor(Color::rgb(0.4, 0.4, 0.4)))
+        .add_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
         .add_resource(WindowDescriptor {
             title: "Game!".to_string(),
             width: 700.0,

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{Coordinate, EntityTracker};
+use crate::*;
 
 pub const NAME: &str = "tracking";
 

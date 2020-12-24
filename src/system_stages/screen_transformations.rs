@@ -38,10 +38,10 @@ fn position_translation(windows: Res<Windows>, mut q: Query<(&Coordinate, &mut T
 }
 
 pub fn get_tile_size(window: &Window) -> Vec2 {
-    Vec2::new(
-        window.width() as f32 / MAP_WIDTH,
-        window.height() as f32 / MAP_HEIGHT,
-    )
+    let tile_width = window.width() as f32 / MAP_WIDTH;
+    let tile_height = window.height() as f32 / MAP_HEIGHT;
+    let min = tile_height.min(tile_width);
+    Vec2::new(min, min)
 }
 
 pub fn coordinate_to_screen_space(coord: Coordinate, window: &Window) -> Vec2 {
