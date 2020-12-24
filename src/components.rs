@@ -35,6 +35,26 @@ impl AddAssign<IVec2> for Coordinate {
     }
 }
 
+use std::ops::Sub;
+impl Sub<IVec2> for Coordinate {
+    type Output = Self;
+
+    fn sub(self, other: IVec2) -> Self {
+        Self {
+            x: self.x - other.x,
+            y: self.y - other.y,
+        }
+    }
+}
+
+use std::ops::SubAssign;
+impl SubAssign<IVec2> for Coordinate {
+    fn sub_assign(&mut self, other: IVec2) {
+        self.x -= other.x;
+        self.y -= other.y;
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct Crate;
 

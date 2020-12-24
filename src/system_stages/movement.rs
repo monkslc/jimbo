@@ -7,12 +7,15 @@ pub const NAME: &str = "movement";
 pub fn stage() -> SystemStage {
     let mut system = SystemStage::parallel();
     system.add_system(jimbo_movement.system());
+    system.add_system(undo.system());
     system
 }
 
 pub fn jimbo_movement(
     keyboard_input: Res<Input<KeyCode>>,
     tracker: Res<EntityTracker>,
+    mut turn_counter: ResMut<TurnCounter>,
+    mut undo_buffer: ResMut<UndoBuffer>,
     mut q: QuerySet<(
         Query<(Entity, &Coordinate), With<Jimbo>>,
         Query<&mut Coordinate>,
@@ -32,6 +35,7 @@ pub fn jimbo_movement(
     } else {
         return;
     };
+    turn_counter.0 += 1;
 
     let mut check_coordinate = *coordinate + direction;
     let mut move_entities = vec![jimbo];
@@ -54,10 +58,48 @@ pub fn jimbo_movement(
     }
 
     for ent in move_entities.into_iter() {
+        let undo_fn = Box::new(move |world: &mut World| {
+            if let Ok(mut coordinate) = world.get_mut::<Coordinate>(ent) {
+                *coordinate -= direction;
+            }
+        });
+        undo_buffer.0.push((turn_counter.0, undo_fn));
         let mut coordinate = q
             .q1_mut()
             .get_mut(ent)
             .expect("This entity should have a coordinate");
         *coordinate += direction;
     }
+}
+
+fn undo(world: &mut World, resources: &mut Resources) {
+    let input = resources
+        .get::<Input<KeyCode>>()
+        .expect("Input resource should have been available");
+    if !input.just_pressed(KeyCode::Z) {
+        return;
+    }
+
+    let mut current_turn = resources
+        .get_mut::<TurnCounter>()
+        .expect("Should've had the current turn");
+
+    if current_turn.0 == 0 {
+        return;
+    }
+
+    let mut undo_buffer = resources
+        .get_mut::<UndoBuffer>()
+        .expect("UndoBuffer should've been available");
+
+    while let Some(undo) = undo_buffer.0.last() {
+        if undo.0 == current_turn.0 {
+            undo.1(world);
+            undo_buffer.0.pop();
+        } else {
+            break;
+        }
+    }
+
+    current_turn.0 -= 1;
 }

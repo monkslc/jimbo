@@ -12,6 +12,8 @@ fn main() {
             height: 700.0,
             ..Default::default()
         })
+        .add_resource(TurnCounter::default())
+        .add_resource(UndoBuffer::default())
         .add_event::<map::LevelChangeEvent>()
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())

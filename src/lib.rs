@@ -81,3 +81,11 @@ fn create_materials(
         wall: materials.add(asset_server.load("wall.png").into()),
     });
 }
+
+#[derive(Debug, Copy, Clone, Default)]
+pub struct TurnCounter(pub usize);
+
+type UndoFn = Box<dyn Fn(&mut World) + Send + Sync + 'static>;
+
+#[derive(Default)]
+pub struct UndoBuffer(Vec<(usize, UndoFn)>);

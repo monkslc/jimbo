@@ -77,11 +77,15 @@ fn level_change(
     commands: &mut Commands,
     materials: Res<Materials>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut turn_counter: ResMut<TurnCounter>,
+    mut undo_buffer: ResMut<UndoBuffer>,
     mut event_reader: Local<EventReader<LevelChangeEvent>>,
     events: Res<Events<LevelChangeEvent>>,
     entities: Query<Entity, With<LevelObject>>,
 ) {
     if let Some(latest_change) = event_reader.latest(&events) {
+        turn_counter.0 = 0;
+        undo_buffer.0.clear();
         for ent in entities.iter() {
             commands.despawn(ent);
         }
