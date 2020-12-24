@@ -1,11 +1,8 @@
 use bevy::prelude::*;
 
-use crate::Coordinate;
+use crate::*;
 
 pub const NAME: &str = "screen-transformations";
-
-const MAP_WIDTH: f32 = 10.0;
-const MAP_HEIGHT: f32 = 10.0;
 
 pub fn stage() -> SystemStage {
     let mut stage = SystemStage::parallel();
@@ -14,9 +11,13 @@ pub fn stage() -> SystemStage {
     stage
 }
 
-fn size_scaling(windows: Res<Windows>, mut q: Query<(&crate::Size, &mut Sprite)>) {
+fn size_scaling(
+    windows: Res<Windows>,
+    level_size: Res<LevelSize>,
+    mut q: Query<(&crate::Size, &mut Sprite)>,
+) {
     let window = windows.get_primary().unwrap();
-    let tile_size = get_tile_size(window);
+    let tile_size = get_tile_size(window, &level_size);
     for (sprite_size, mut sprite) in q.iter_mut() {
         sprite.size = Vec2::new(
             sprite_size.width * tile_size.x,
@@ -25,9 +26,13 @@ fn size_scaling(windows: Res<Windows>, mut q: Query<(&crate::Size, &mut Sprite)>
     }
 }
 
-fn position_translation(windows: Res<Windows>, mut q: Query<(&Coordinate, &mut Transform)>) {
+fn position_translation(
+    windows: Res<Windows>,
+    level_size: Res<LevelSize>,
+    mut q: Query<(&Coordinate, &mut Transform)>,
+) {
     let window = windows.get_primary().unwrap();
-    let tile_size = get_tile_size(window);
+    let tile_size = get_tile_size(window, &level_size);
     let bottom_left = Vec2::new(window.width() as f32 / -2.0, window.height() as f32 / -2.0);
     let center_sprite_adjustment = tile_size / 2.0;
 
@@ -37,15 +42,19 @@ fn position_translation(windows: Res<Windows>, mut q: Query<(&Coordinate, &mut T
     }
 }
 
-pub fn get_tile_size(window: &Window) -> Vec2 {
-    let tile_width = window.width() as f32 / MAP_WIDTH;
-    let tile_height = window.height() as f32 / MAP_HEIGHT;
+pub fn get_tile_size(window: &Window, level_size: &Res<LevelSize>) -> Vec2 {
+    let tile_width = window.width() as f32 / (level_size.width as f32);
+    let tile_height = window.height() as f32 / (level_size.height as f32);
     let min = tile_height.min(tile_width);
     Vec2::new(min, min)
 }
 
-pub fn coordinate_to_screen_space(coord: Coordinate, window: &Window) -> Vec2 {
-    let tile_size = get_tile_size(window);
+pub fn coordinate_to_screen_space(
+    coord: Coordinate,
+    window: &Window,
+    level_size: &Res<LevelSize>,
+) -> Vec2 {
+    let tile_size = get_tile_size(window, level_size);
     let bottom_left = Vec2::new(window.width() as f32 / -2.0, window.height() / -2.0 as f32);
     let center_adjustment = tile_size / 2.0;
     bottom_left + coord.scale(tile_size) + center_adjustment

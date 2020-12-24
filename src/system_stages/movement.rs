@@ -14,6 +14,7 @@ pub fn stage() -> SystemStage {
 pub fn jimbo_movement(
     keyboard_input: Res<Input<KeyCode>>,
     tracker: Res<EntityTracker>,
+    level_size: Res<LevelSize>,
     mut turn_counter: ResMut<TurnCounter>,
     mut undo_buffer: ResMut<UndoBuffer>,
     mut q: QuerySet<(
@@ -44,7 +45,7 @@ pub fn jimbo_movement(
         for ent in entities {
             if let Ok(movable) = q.q2().get(*ent) {
                 if !movable.0 {
-                    move_entities = vec![];
+                    move_entities.clear();
                     break 'outer;
                 }
                 has_movable = true;
@@ -55,6 +56,14 @@ pub fn jimbo_movement(
             break 'outer;
         }
         check_coordinate += direction;
+    }
+
+    if check_coordinate.x < 0
+        || check_coordinate.x >= level_size.width as i32
+        || check_coordinate.y < 0
+        || check_coordinate.y >= level_size.height as i32
+    {
+        move_entities.clear();
     }
 
     for ent in move_entities.into_iter() {

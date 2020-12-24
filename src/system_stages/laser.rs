@@ -22,6 +22,7 @@ fn laser_path_adjustment(
     mut meshes: ResMut<Assets<Mesh>>,
     windows: Res<Windows>,
     tracker: Res<EntityTracker>,
+    level_size: Res<LevelSize>,
     opaque_q: Query<&Opaque>,
     coordinate_change_q: Query<(), Changed<Coordinate>>,
     refactor_q: Query<&crate::Direction, With<Refactor>>,
@@ -38,8 +39,15 @@ fn laser_path_adjustment(
         let mesh_handle = laser.1;
 
         if let Ok((LaserSource(direction, _), start)) = laser_sources_q.get(source) {
-            let (path, end) =
-                compute_laser_path(window, *start, *direction, &tracker, &opaque_q, &refactor_q);
+            let (path, end) = compute_laser_path(
+                window,
+                &level_size,
+                *start,
+                *direction,
+                &tracker,
+                &opaque_q,
+                &refactor_q,
+            );
             let mesh = path_to_mesh(&path);
             let old_mesh = meshes.get_mut(mesh_handle).unwrap();
             *old_mesh = mesh;
@@ -50,6 +58,7 @@ fn laser_path_adjustment(
 
 fn compute_laser_path(
     window: &Window,
+    level_size: &Res<LevelSize>,
     start: Coordinate,
     direction: crate::Direction,
     tracker: &Res<EntityTracker>,
@@ -59,13 +68,12 @@ fn compute_laser_path(
     let mut direction = direction;
     let mut check_coordinate = start + direction.direction();
     let mut builder = Path::builder();
-    let screen_space_start = coordinate_to_screen_space(start, window);
+    let screen_space_start = coordinate_to_screen_space(start, window, level_size);
     builder.move_to(point(screen_space_start.x, screen_space_start.y));
-    // TODO: better map coord checks
-    'outer: while check_coordinate.x < 10
-        && check_coordinate.x > 0
-        && check_coordinate.y > 0
-        && check_coordinate.y < 10
+    'outer: while check_coordinate.x >= 0
+        && check_coordinate.x < (level_size.width as i32)
+        && check_coordinate.y >= 0
+        && check_coordinate.y < (level_size.height as i32)
     {
         if let Some(entities) = tracker.0.get(&check_coordinate) {
             for entity in entities {
@@ -96,7 +104,8 @@ fn compute_laser_path(
                             _ => break 'outer,
                         },
                     };
-                    let screen_space = coordinate_to_screen_space(check_coordinate, window);
+                    let screen_space =
+                        coordinate_to_screen_space(check_coordinate, window, level_size);
                     builder.line_to(point(screen_space.x, screen_space.y));
                     direction = new_direction;
                 }
@@ -104,7 +113,8 @@ fn compute_laser_path(
         }
         check_coordinate += direction.direction();
     }
-    let screen_space = coordinate_to_screen_space(check_coordinate, window);
+
+    let screen_space = coordinate_to_screen_space(check_coordinate, window, level_size);
     builder.line_to(point(screen_space.x, screen_space.y));
     (builder.build(), check_coordinate)
 }

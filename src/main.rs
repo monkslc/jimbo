@@ -8,11 +8,12 @@ fn main() {
         .add_resource(ClearColor(Color::rgb(0.1, 0.1, 0.1)))
         .add_resource(WindowDescriptor {
             title: "Game!".to_string(),
-            width: 700.0,
+            width: 1500.0,
             height: 700.0,
             ..Default::default()
         })
         .add_resource(TurnCounter::default())
+        .add_resource(LevelSize::default())
         .add_resource(UndoBuffer::default())
         .add_event::<map::LevelChangeEvent>()
         .add_plugins(DefaultPlugins)

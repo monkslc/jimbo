@@ -76,6 +76,7 @@ static LEVELS: [&str; 10] = [
 fn level_change(
     commands: &mut Commands,
     materials: Res<Materials>,
+    mut level_size: ResMut<LevelSize>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut turn_counter: ResMut<TurnCounter>,
     mut undo_buffer: ResMut<UndoBuffer>,
@@ -95,6 +96,7 @@ fn level_change(
             commands,
             &materials,
             &mut meshes,
+            &mut level_size,
         );
     }
 }
@@ -103,12 +105,14 @@ fn initial_level(
     commands: &mut Commands,
     materials: Res<Materials>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut level_size: ResMut<LevelSize>,
 ) {
     load_level(
         FilePath::new("levels/1.lvl"),
         commands,
         &materials,
         &mut meshes,
+        &mut level_size,
     );
 }
 
@@ -117,6 +121,7 @@ fn load_level(
     mut commands: &mut Commands,
     materials: &Res<Materials>,
     meshes: &mut ResMut<Assets<Mesh>>,
+    level_size: &mut ResMut<LevelSize>,
 ) {
     let level_file =
         File::open(path).unwrap_or_else(|err| panic!("Failed to open level: {:?}\n{}", path, err));
@@ -129,17 +134,22 @@ fn load_level(
     let mut sizes = sizes
         .split('|')
         .map(|size| size.trim())
-        .map(|size| size.parse::<i32>().expect("expected a number for the size"));
+        .map(|size| size.parse::<u32>().expect("expected a number for the size"));
 
     let height = sizes.next().expect("expected level height");
-    let _width = sizes.next().expect("expected level width");
+    let width = sizes.next().expect("expected level width");
+    level_size.width = width;
+    level_size.height = height;
 
     for (y, line) in lines {
         let y = y as i32;
         let line = line.unwrap_or_else(|err| panic!("Error loading level: {:?}\n{}", path, err));
         for (x, object) in line.split('|').enumerate() {
             let x = x as i32;
-            let coord = Coordinate { x, y: height - y };
+            let coord = Coordinate {
+                x,
+                y: ((height as i32) - y),
+            };
             spawn_tile(&mut commands, &materials, coord);
             let object = object.trim();
 
