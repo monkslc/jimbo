@@ -26,6 +26,16 @@ pub fn orb_update(
         let original_material = material.clone();
         let original_state = orb.0;
 
+        let undo_fn = Box::new(move |world: &mut World| {
+            if let Ok(mut orb) = world.get_mut::<Orb>(entity) {
+                orb.0 = original_state;
+            }
+
+            if let Ok(mut material) = world.get_mut::<Handle<ColorMaterial>>(entity) {
+                *material = original_material;
+            }
+        });
+
         let (deactivated, activated, destroyed) = match orb.1 {
             LaserType::Red => (
                 materials.orb_red_deactivated.clone(),
@@ -43,10 +53,12 @@ pub fn orb_update(
             let Laser(_, laser_type, end) = laser;
             if end == coord {
                 if *laser_type == orb.1 && orb.0 != OrbState::Destroyed {
+                    undo_buffer.0.push((turn_counter.0, undo_fn));
                     orb.0 = OrbState::Activated;
                     *material = activated;
                     continue 'outer;
                 } else {
+                    undo_buffer.0.push((turn_counter.0, undo_fn));
                     orb.0 = OrbState::Destroyed;
                     *material = destroyed;
                     continue 'outer;
@@ -55,20 +67,9 @@ pub fn orb_update(
         }
 
         if orb.0 != OrbState::Destroyed {
+            undo_buffer.0.push((turn_counter.0, undo_fn));
             *material = deactivated;
             orb.0 = OrbState::Deactivated;
         }
-
-        let undo_fn = Box::new(move |world: &mut World| {
-            if let Ok(mut orb) = world.get_mut::<Orb>(entity) {
-                orb.0 = original_state;
-            }
-
-            if let Ok(mut material) = world.get_mut::<Handle<ColorMaterial>>(entity) {
-                *material = original_material;
-            }
-        });
-
-        undo_buffer.0.push((turn_counter.0, undo_fn));
     }
 }
