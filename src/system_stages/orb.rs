@@ -12,15 +12,20 @@ pub fn stage() -> SystemStage {
 
 pub fn orb_update(
     materials: Res<Materials>,
+    turn_counter: Res<TurnCounter>,
+    mut undo_buffer: ResMut<UndoBuffer>,
     laser_changed: Query<(), Changed<Laser>>,
     laser_q: Query<&Laser>,
-    mut orb_q: Query<(&mut Orb, &Coordinate, &mut Handle<ColorMaterial>)>,
+    mut orb_q: Query<(Entity, &mut Orb, &Coordinate, &mut Handle<ColorMaterial>)>,
 ) {
     if laser_changed.iter().next().is_none() {
         return;
     }
 
-    'outer: for (mut orb, coord, mut material) in orb_q.iter_mut() {
+    'outer: for (entity, mut orb, coord, mut material) in orb_q.iter_mut() {
+        let original_material = material.clone();
+        let original_state = orb.0;
+
         let (deactivated, activated, destroyed) = match orb.1 {
             LaserType::Red => (
                 materials.orb_red_deactivated.clone(),
@@ -53,5 +58,17 @@ pub fn orb_update(
             *material = deactivated;
             orb.0 = OrbState::Deactivated;
         }
+
+        let undo_fn = Box::new(move |world: &mut World| {
+            if let Ok(mut orb) = world.get_mut::<Orb>(entity) {
+                orb.0 = original_state;
+            }
+
+            if let Ok(mut material) = world.get_mut::<Handle<ColorMaterial>>(entity) {
+                *material = original_material;
+            }
+        });
+
+        undo_buffer.0.push((turn_counter.0, undo_fn));
     }
 }

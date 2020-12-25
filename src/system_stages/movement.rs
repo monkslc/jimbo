@@ -103,8 +103,8 @@ fn undo(world: &mut World, resources: &mut Resources) {
 
     while let Some(undo) = undo_buffer.0.last() {
         if undo.0 == current_turn.0 {
-            undo.1(world);
-            undo_buffer.0.pop();
+            let func = undo_buffer.0.pop().unwrap().1;
+            func(world);
         } else {
             break;
         }

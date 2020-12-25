@@ -89,7 +89,7 @@ fn create_materials(
 #[derive(Debug, Copy, Clone, Default)]
 pub struct TurnCounter(pub usize);
 
-type UndoFn = Box<dyn Fn(&mut World) + Send + Sync + 'static>;
+type UndoFn = Box<dyn FnOnce(&mut World) + Send + Sync + 'static>;
 
 #[derive(Default)]
 pub struct UndoBuffer(Vec<(usize, UndoFn)>);
