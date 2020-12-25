@@ -365,7 +365,7 @@ pub fn spawn_orb(
             ..Default::default()
         })
         .with(LevelObject)
-        .with(Orb(false, laser_type))
+        .with(Orb(OrbState::Deactivated, laser_type))
         .with(Opaque)
         .with(Movable(false))
         .with(coordinate)

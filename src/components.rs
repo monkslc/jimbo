@@ -104,8 +104,15 @@ pub struct Movable(pub bool);
 #[derive(Debug, Copy, Clone)]
 pub struct Opaque;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum OrbState {
+    Deactivated,
+    Activated,
+    Destroyed,
+}
+
 #[derive(Debug, Copy, Clone)]
-pub struct Orb(pub bool, pub LaserType);
+pub struct Orb(pub OrbState, pub LaserType);
 
 #[derive(Debug, Copy, Clone)]
 pub struct Size {
