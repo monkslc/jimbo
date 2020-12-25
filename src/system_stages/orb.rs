@@ -11,6 +11,7 @@ pub fn stage() -> SystemStage {
 }
 
 pub fn orb_update(
+    keyboard_input: Res<Input<KeyCode>>,
     materials: Res<Materials>,
     turn_counter: Res<TurnCounter>,
     mut undo_buffer: ResMut<UndoBuffer>,
@@ -21,6 +22,8 @@ pub fn orb_update(
     if laser_changed.iter().next().is_none() {
         return;
     }
+
+    let should_push_undo_buffer = !keyboard_input.just_pressed(KeyCode::Z);
 
     'outer: for (entity, mut orb, coord, mut material) in orb_q.iter_mut() {
         let original_material = material.clone();
@@ -53,23 +56,28 @@ pub fn orb_update(
             let Laser(_, laser_type, end) = laser;
             if end == coord {
                 if *laser_type == orb.1 && orb.0 != OrbState::Destroyed {
-                    undo_buffer.0.push((turn_counter.0, undo_fn));
                     orb.0 = OrbState::Activated;
                     *material = activated;
-                    continue 'outer;
                 } else {
-                    undo_buffer.0.push((turn_counter.0, undo_fn));
                     orb.0 = OrbState::Destroyed;
                     *material = destroyed;
-                    continue 'outer;
                 }
+
+                if should_push_undo_buffer {
+                    undo_buffer.0.push((turn_counter.0, undo_fn));
+                }
+
+                continue 'outer;
             }
         }
 
         if orb.0 != OrbState::Destroyed {
-            undo_buffer.0.push((turn_counter.0, undo_fn));
             *material = deactivated;
             orb.0 = OrbState::Deactivated;
+
+            if should_push_undo_buffer {
+                undo_buffer.0.push((turn_counter.0, undo_fn));
+            }
         }
     }
 }

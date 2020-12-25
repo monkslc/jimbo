@@ -19,33 +19,6 @@ pub fn stage() -> SystemStage {
 }
 
 fn laser_path_adjustment(
-    meshes: ResMut<Assets<Mesh>>,
-    windows: Res<Windows>,
-    tracker: Res<EntityTracker>,
-    level_size: Res<LevelSize>,
-    opaque_q: Query<&Opaque>,
-    refactor_q: Query<&crate::Direction, With<Refactor>>,
-    laser_sources_q: Query<(&LaserSource, &Coordinate)>,
-    lasers_q: Query<(&mut Laser, &Handle<Mesh>)>,
-    coordinate_change_q: Query<(), Changed<Coordinate>>,
-) {
-    if coordinate_change_q.iter().next().is_none() {
-        return;
-    }
-
-    update_lasers(
-        meshes,
-        windows,
-        tracker,
-        level_size,
-        opaque_q,
-        refactor_q,
-        laser_sources_q,
-        lasers_q,
-    );
-}
-
-pub fn update_lasers(
     mut meshes: ResMut<Assets<Mesh>>,
     windows: Res<Windows>,
     tracker: Res<EntityTracker>,
@@ -54,7 +27,12 @@ pub fn update_lasers(
     refactor_q: Query<&crate::Direction, With<Refactor>>,
     laser_sources_q: Query<(&LaserSource, &Coordinate)>,
     mut lasers_q: Query<(&mut Laser, &Handle<Mesh>)>,
+    coordinate_change_q: Query<(), Changed<Coordinate>>,
 ) {
+    if coordinate_change_q.iter().next().is_none() {
+        return;
+    }
+
     let window = windows.get_primary().unwrap();
     for mut laser in lasers_q.iter_mut() {
         let Laser(source, _, _) = *(laser.0);

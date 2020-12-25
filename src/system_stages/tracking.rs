@@ -2,8 +2,6 @@ use bevy::prelude::*;
 
 use crate::*;
 
-pub const NAME: &str = "tracking";
-
 pub fn stage() -> SystemStage {
     let mut stage = SystemStage::parallel();
     stage.add_system(track_coordinates.system());

@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use std::collections::HashMap;
 
 use crate::*;
 
@@ -77,9 +76,6 @@ impl Direction {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct EntityTracker(pub HashMap<Coordinate, Vec<Entity>>);
-
 #[derive(Debug, Copy, Clone)]
 pub struct Jimbo;
 
@@ -115,13 +111,16 @@ pub enum OrbState {
 pub struct Orb(pub OrbState, pub LaserType);
 
 #[derive(Debug, Copy, Clone)]
+pub struct Refactor;
+
+#[derive(Debug, Copy, Clone)]
 pub struct Size {
     pub width: f32,
     pub height: f32,
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Refactor;
+pub struct Tile;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Wall;
