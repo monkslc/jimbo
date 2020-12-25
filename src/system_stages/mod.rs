@@ -15,3 +15,6 @@ pub use post_level_update::NAME as POST_LEVEL_UPDATE;
 
 pub mod screen_transformations;
 pub use screen_transformations::NAME as SCREEN_TRANSFORMATIONS;
+
+pub mod undo;
+pub use undo::NAME as UNDO;

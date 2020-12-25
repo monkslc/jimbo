@@ -16,6 +16,7 @@ fn main() {
         .add_resource(LevelSize::default())
         .add_resource(UndoBuffer::default())
         .add_event::<map::LevelChangeEvent>()
+        .add_event::<system_stages::undo::UpdateLaserEvent>()
         .add_plugins(DefaultPlugins)
         .add_startup_system(setup.system())
         .add_plugin(MaterialsPlugin)
@@ -57,6 +58,11 @@ fn main() {
             system_stages::ORB,
             system_stages::SCREEN_TRANSFORMATIONS,
             system_stages::screen_transformations::stage(),
+        )
+        .add_stage_after(
+            system_stages::POST_LEVEL_UPDATE,
+            system_stages::UNDO,
+            system_stages::undo::stage(),
         )
         .run();
 }

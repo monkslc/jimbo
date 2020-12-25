@@ -7,7 +7,6 @@ pub const NAME: &str = "movement";
 pub fn stage() -> SystemStage {
     let mut system = SystemStage::parallel();
     system.add_system(jimbo_movement.system());
-    system.add_system(undo.system());
     system
 }
 
@@ -79,36 +78,4 @@ pub fn jimbo_movement(
             .expect("This entity should have a coordinate");
         *coordinate += direction;
     }
-}
-
-fn undo(world: &mut World, resources: &mut Resources) {
-    let input = resources
-        .get::<Input<KeyCode>>()
-        .expect("Input resource should have been available");
-    if !input.just_pressed(KeyCode::Z) {
-        return;
-    }
-
-    let mut current_turn = resources
-        .get_mut::<TurnCounter>()
-        .expect("Should've had the current turn");
-
-    if current_turn.0 == 0 {
-        return;
-    }
-
-    let mut undo_buffer = resources
-        .get_mut::<UndoBuffer>()
-        .expect("UndoBuffer should've been available");
-
-    while let Some(undo) = undo_buffer.0.last() {
-        if undo.0 == current_turn.0 {
-            let func = undo_buffer.0.pop().unwrap().1;
-            func(world);
-        } else {
-            break;
-        }
-    }
-
-    current_turn.0 -= 1;
 }
