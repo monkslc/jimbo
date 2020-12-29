@@ -186,7 +186,10 @@ pub fn spawn_laser_source(
             ..Default::default()
         })
         .with(LevelObject)
-        .with(LaserSource(direction, laser_type))
+        .with(LaserSource {
+            direction,
+            laser_type,
+        })
         .with(Movable(true))
         .with(coordinate)
         .with(Opaque)
@@ -213,7 +216,11 @@ pub fn spawn_laser_source(
             ..Default::default()
         })
         .with(LevelObject)
-        .with(Laser(source, laser_type, coordinate));
+        .with(Laser {
+            source,
+            laser_type,
+            end: coordinate,
+        });
 }
 
 pub fn spawn_jimbo(commands: &mut Commands, materials: &Res<Materials>, coordinate: Coordinate) {
@@ -256,7 +263,10 @@ pub fn spawn_orb(
             ..Default::default()
         })
         .with(LevelObject)
-        .with(Orb(OrbState::Deactivated, laser_type))
+        .with(Orb {
+            state: OrbState::Deactivated,
+            orb_type: laser_type,
+        })
         .with(Opaque)
         .with(Movable(false))
         .with(coordinate)
@@ -289,12 +299,13 @@ pub fn spawn_refactor(
             ..Default::default()
         })
         .with(LevelObject)
-        .with(Refactor)
+        .with(Refactor {
+            main_direction: direction,
+        })
         .with(Movable(true))
         .with(coordinate)
         .with(crate::Size {
             width: 0.9,
             height: 0.9,
-        })
-        .with(direction);
+        });
 }

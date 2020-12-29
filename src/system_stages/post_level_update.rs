@@ -16,7 +16,7 @@ pub fn level_completed(laser_changed: Query<(), Changed<Laser>>, orbs: Query<&Or
     }
 
     for orb in orbs.iter() {
-        if orb.0 != OrbState::Activated {
+        if orb.state != OrbState::Activated {
             return;
         }
     }

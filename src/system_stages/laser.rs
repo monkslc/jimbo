@@ -24,7 +24,7 @@ fn laser_path_adjustment(
     tracker: Res<EntityTracker>,
     level_size: Res<LevelSize>,
     opaque_q: Query<&Opaque>,
-    refactor_q: Query<&crate::Direction, With<Refactor>>,
+    refactor_q: Query<&Refactor>,
     laser_sources_q: Query<(&LaserSource, &Coordinate)>,
     mut lasers_q: Query<(&mut Laser, &Handle<Mesh>)>,
     coordinate_change_q: Query<(), Changed<Coordinate>>,
@@ -34,11 +34,8 @@ fn laser_path_adjustment(
     }
 
     let window = windows.get_primary().unwrap();
-    for mut laser in lasers_q.iter_mut() {
-        let Laser(source, _, _) = *(laser.0);
-        let mesh_handle = laser.1;
-
-        if let Ok((LaserSource(direction, _), start)) = laser_sources_q.get(source) {
+    for (mut laser, laser_mesh) in lasers_q.iter_mut() {
+        if let Ok((LaserSource { direction, .. }, start)) = laser_sources_q.get(laser.source) {
             let (path, end) = compute_laser_path(
                 window,
                 &level_size,
@@ -49,9 +46,9 @@ fn laser_path_adjustment(
                 &refactor_q,
             );
             let mesh = path_to_mesh(&path);
-            let old_mesh = meshes.get_mut(mesh_handle).unwrap();
+            let old_mesh = meshes.get_mut(laser_mesh).unwrap();
             *old_mesh = mesh;
-            laser.0 .2 = end;
+            laser.end = end;
         }
     }
 }
@@ -63,7 +60,7 @@ fn compute_laser_path(
     direction: crate::Direction,
     tracker: &Res<EntityTracker>,
     opaque_q: &Query<&Opaque>,
-    refactors_q: &Query<&crate::Direction, With<Refactor>>,
+    refactors_q: &Query<&Refactor>,
 ) -> (Path, Coordinate) {
     let mut direction = direction;
     let mut check_coordinate = start + direction.direction();
@@ -81,28 +78,15 @@ fn compute_laser_path(
                     break 'outer;
                 }
 
-                if let Ok(refactor_direction) = refactors_q.get(*entity) {
-                    let new_direction = match direction {
-                        crate::Direction::Up => match refactor_direction {
-                            crate::Direction::Down => crate::Direction::Left,
-                            crate::Direction::Right => crate::Direction::Right,
-                            _ => break 'outer,
-                        },
-                        crate::Direction::Right => match refactor_direction {
-                            crate::Direction::Left => crate::Direction::Up,
-                            crate::Direction::Down => crate::Direction::Down,
-                            _ => break 'outer,
-                        },
-                        crate::Direction::Down => match refactor_direction {
-                            crate::Direction::Up => crate::Direction::Right,
-                            crate::Direction::Left => crate::Direction::Left,
-                            _ => break 'outer,
-                        },
-                        crate::Direction::Left => match refactor_direction {
-                            crate::Direction::Right => crate::Direction::Down,
-                            crate::Direction::Up => crate::Direction::Up,
-                            _ => break 'outer,
-                        },
+                if let Ok(Refactor { main_direction }) = refactors_q.get(*entity) {
+                    let alt_direction = main_direction.rotated_90();
+
+                    let new_direction = if main_direction.rotated_180() == direction {
+                        alt_direction
+                    } else if alt_direction.rotated_180() == direction {
+                        *main_direction
+                    } else {
+                        break 'outer;
                     };
                     let screen_space =
                         coordinate_to_screen_space(check_coordinate, window, level_size);

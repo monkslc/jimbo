@@ -57,12 +57,12 @@ impl SubAssign<IVec2> for Coordinate {
 #[derive(Debug, Copy, Clone)]
 pub struct Crate;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
     Up,
     Right,
-    Left,
     Down,
+    Left,
 }
 
 impl Direction {
@@ -72,6 +72,24 @@ impl Direction {
             Self::Right => IVec2::new(1, 0),
             Self::Down => IVec2::new(0, -1),
             Self::Left => IVec2::new(-1, 0),
+        }
+    }
+
+    pub fn rotated_90(&self) -> Direction {
+        match self {
+            Self::Up => Self::Right,
+            Self::Right => Self::Down,
+            Self::Down => Self::Left,
+            Self::Left => Self::Up,
+        }
+    }
+
+    pub fn rotated_180(&self) -> Direction {
+        match self {
+            Self::Up => Self::Down,
+            Self::Right => Self::Left,
+            Self::Down => Self::Up,
+            Self::Left => Self::Right,
         }
     }
 }
@@ -86,10 +104,17 @@ pub enum LaserType {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct LaserSource(pub crate::Direction, pub LaserType);
+pub struct LaserSource {
+    pub direction: crate::Direction,
+    pub laser_type: LaserType,
+}
 
 #[derive(Debug, Copy, Clone)]
-pub struct Laser(pub Entity, pub LaserType, pub Coordinate);
+pub struct Laser {
+    pub source: Entity,
+    pub laser_type: LaserType,
+    pub end: Coordinate,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct LevelObject;
@@ -108,10 +133,15 @@ pub enum OrbState {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Orb(pub OrbState, pub LaserType);
+pub struct Orb {
+    pub state: OrbState,
+    pub orb_type: LaserType,
+}
 
 #[derive(Debug, Copy, Clone)]
-pub struct Refactor;
+pub struct Refactor {
+    pub main_direction: crate::Direction,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct Size {
