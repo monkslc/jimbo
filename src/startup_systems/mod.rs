@@ -13,7 +13,7 @@ impl Plugin for StartupSystemPlugin {
         app.add_startup_stage("materials", SystemStage::parallel());
         app.add_startup_system_to_stage("materials", create_materials.system());
 
-        app.add_startup_stage("initial_level", SystemStage::parallel());
+        app.add_startup_stage("initial_level", SystemStage::serial());
         app.add_startup_system_to_stage("initial_level", initial_level.system());
     }
 }

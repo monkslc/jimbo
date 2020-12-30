@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::render::pipeline::PrimitiveTopology;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -57,7 +57,7 @@ pub fn load_level(
                         'L' => crate::Direction::Left,
                         d => panic!("Unrecognized direction: {}", d),
                     };
-                    spawn_refactor(commands, materials, direction, coord);
+                    spawn_refactor(commands, materials, meshes, direction, coord);
                 }
                 x if x.starts_with('O') => {
                     let mut chars = x.chars().skip(1);
@@ -83,7 +83,6 @@ pub fn load_level(
                         'L' => crate::Direction::Left,
                         d => panic!("Unrecognized laser direction: {:?}", d),
                     };
-
                     spawn_laser_source(
                         commands,
                         materials,
@@ -199,12 +198,26 @@ pub fn spawn_laser_source(
         })
         .current_entity()
         .expect("should've had laser source");
+    spawn_laser(
+        commands, materials, meshes, laser_type, direction, coordinate, source,
+    );
+}
 
+pub fn spawn_laser(
+    commands: &mut Commands,
+    materials: &Res<Materials>,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    laser_type: LaserType,
+    direction: crate::Direction,
+    end: Coordinate,
+    source: Entity,
+) -> Entity {
     let material = match laser_type {
         LaserType::Red => materials.laser_red.clone(),
         LaserType::Blue => materials.laser_blue.clone(),
     };
-    let mesh = meshes.add(Mesh::new(PrimitiveTopology::TriangleList));
+    let mesh = system_stages::laser::default_mesh();
+    let mesh = meshes.add(mesh);
     commands
         .spawn(SpriteBundle {
             material,
@@ -219,8 +232,10 @@ pub fn spawn_laser_source(
         .with(Laser {
             source,
             laser_type,
-            end: coordinate,
-        });
+            end,
+        })
+        .current_entity()
+        .unwrap()
 }
 
 pub fn spawn_jimbo(commands: &mut Commands, materials: &Res<Materials>, coordinate: Coordinate) {
@@ -279,6 +294,7 @@ pub fn spawn_orb(
 pub fn spawn_refactor(
     commands: &mut Commands,
     materials: &Res<Materials>,
+    meshes: &mut ResMut<Assets<Mesh>>,
     direction: crate::Direction,
     coordinate: Coordinate,
 ) {
@@ -289,7 +305,7 @@ pub fn spawn_refactor(
         crate::Direction::Up => materials.refactor_up.clone(),
     };
 
-    commands
+    let source = commands
         .spawn(SpriteBundle {
             material,
             sprite: Sprite {
@@ -299,13 +315,63 @@ pub fn spawn_refactor(
             ..Default::default()
         })
         .with(LevelObject)
-        .with(Refactor {
-            main_direction: direction,
-        })
         .with(Movable(true))
         .with(coordinate)
         .with(crate::Size {
             width: 0.9,
             height: 0.9,
-        });
+        })
+        .current_entity()
+        .unwrap();
+    let mesh = system_stages::laser::default_mesh();
+    let mesh = meshes.add(mesh);
+    commands
+        .spawn(SpriteBundle {
+            material: materials.laser_red.clone(),
+            mesh,
+            sprite: Sprite {
+                size: Vec2::new(1.0, 1.0),
+                resize_mode: SpriteResizeMode::Manual,
+            },
+            ..Default::default()
+        })
+        .with(LevelObject)
+        .with(Laser {
+            source,
+            laser_type: LaserType::Red,
+            end: coordinate,
+        })
+        .current_entity()
+        .unwrap();
+
+    let outbound_main = spawn_laser(
+        commands,
+        materials,
+        meshes,
+        LaserType::Red,
+        direction,
+        coordinate,
+        source,
+    );
+
+    let outbound_alt = spawn_laser(
+        commands,
+        materials,
+        meshes,
+        LaserType::Red,
+        direction,
+        coordinate,
+        source,
+    );
+
+    commands.insert_one(
+        source,
+        Refactor {
+            main_direction: direction,
+            inbound_alt: HashSet::new(),
+            inbound_main: HashSet::new(),
+            outbound_alt,
+            outbound_main,
+        },
+    );
 }

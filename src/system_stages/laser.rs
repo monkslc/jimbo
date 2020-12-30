@@ -23,44 +23,161 @@ fn laser_path_adjustment(
     windows: Res<Windows>,
     tracker: Res<EntityTracker>,
     level_size: Res<LevelSize>,
+    materials: Res<Materials>,
     opaque_q: Query<&Opaque>,
-    refactor_q: Query<&Refactor>,
+    mut refactor_q: Query<(Entity, &mut Refactor, &Coordinate)>,
     laser_sources_q: Query<(&LaserSource, &Coordinate)>,
-    mut lasers_q: Query<(&mut Laser, &Handle<Mesh>)>,
+    mut lasers_q: Query<(Entity, &mut Laser, &Handle<Mesh>)>,
     coordinate_change_q: Query<(), Changed<Coordinate>>,
+    mut laser_material_q: Query<&mut Handle<ColorMaterial>>,
 ) {
     if coordinate_change_q.iter().next().is_none() {
         return;
     }
 
+    for (_, mut refactor, start) in refactor_q.iter_mut() {
+        refactor.inbound_main.clear();
+        refactor.inbound_alt.clear();
+
+        let (_, mut laser, mesh_handle) = lasers_q.get_mut(refactor.outbound_main).unwrap();
+        let old_mesh = meshes.get_mut(mesh_handle).unwrap();
+        let new_mesh = default_mesh();
+        *old_mesh = new_mesh;
+        laser.end = *start;
+
+        let (_, mut laser, mesh_handle) = lasers_q.get_mut(refactor.outbound_alt).unwrap();
+        let old_mesh = meshes.get_mut(mesh_handle).unwrap();
+        let new_mesh = default_mesh();
+        *old_mesh = new_mesh;
+        laser.end = *start;
+    }
+
     let window = windows.get_primary().unwrap();
-    for (mut laser, laser_mesh) in lasers_q.iter_mut() {
+    let mut laser_direction_changes = Vec::new();
+    for (laser_id, mut laser, laser_mesh) in lasers_q.iter_mut() {
         if let Ok((LaserSource { direction, .. }, start)) = laser_sources_q.get(laser.source) {
-            let (path, end) = compute_laser_path(
+            update_laser(
+                &mut meshes,
+                laser_id,
+                &mut laser,
+                laser_mesh,
                 window,
                 &level_size,
+                &materials,
                 *start,
                 *direction,
                 &tracker,
                 &opaque_q,
-                &refactor_q,
+                &mut refactor_q,
+                &mut laser_direction_changes,
+                &mut laser_material_q,
             );
-            let mesh = path_to_mesh(&path);
-            let old_mesh = meshes.get_mut(laser_mesh).unwrap();
-            *old_mesh = mesh;
-            laser.end = end;
+        }
+    }
+
+    while let Some(refactor_id) = laser_direction_changes.pop() {
+        if let Ok((_, refactor, coordinate)) = refactor_q.get_mut(refactor_id) {
+            if !refactor.inbound_main.is_empty() && !refactor.inbound_alt.is_empty() {
+                continue;
+            }
+
+            if !refactor.inbound_main.is_empty() {
+                let laser_type = LaserType::amalgamate(&refactor.inbound_main);
+                let (_, mut laser, laser_mesh) = lasers_q.get_mut(refactor.outbound_alt).unwrap();
+                laser.laser_type = laser_type;
+                update_laser(
+                    &mut meshes,
+                    refactor.outbound_main,
+                    &mut laser,
+                    laser_mesh,
+                    window,
+                    &level_size,
+                    &materials,
+                    *coordinate,
+                    refactor.outbound_alt(),
+                    &tracker,
+                    &opaque_q,
+                    &mut refactor_q,
+                    &mut laser_direction_changes,
+                    &mut laser_material_q,
+                );
+            } else if !refactor.inbound_alt.is_empty() {
+                let laser_type = LaserType::amalgamate(&refactor.inbound_alt);
+                let (_, mut laser, laser_mesh) = lasers_q.get_mut(refactor.outbound_main).unwrap();
+                laser.laser_type = laser_type;
+                update_laser(
+                    &mut meshes,
+                    refactor.outbound_main,
+                    &mut laser,
+                    laser_mesh,
+                    window,
+                    &level_size,
+                    &materials,
+                    *coordinate,
+                    refactor.outbound_main(),
+                    &tracker,
+                    &opaque_q,
+                    &mut refactor_q,
+                    &mut laser_direction_changes,
+                    &mut laser_material_q,
+                );
+            }
         }
     }
 }
 
+fn update_laser(
+    meshes: &mut ResMut<Assets<Mesh>>,
+    laser_id: Entity,
+    laser: &mut Laser,
+    laser_mesh: &Handle<Mesh>,
+    window: &Window,
+    level_size: &Res<LevelSize>,
+    materials: &Res<Materials>,
+    start: Coordinate,
+    direction: crate::Direction,
+    tracker: &Res<EntityTracker>,
+    opaque_q: &Query<&Opaque>,
+    refactors_q: &mut Query<(Entity, &mut Refactor, &Coordinate)>,
+    refactor_stack: &mut Vec<Entity>,
+    laser_material_q: &mut Query<&mut Handle<ColorMaterial>>,
+) {
+    let (path, end) = compute_laser_path(
+        laser.laser_type,
+        window,
+        level_size,
+        start,
+        direction,
+        tracker,
+        opaque_q,
+        refactors_q,
+        refactor_stack,
+    );
+
+    let mesh = path_to_mesh(&path);
+    let old_mesh = meshes.get_mut(laser_mesh).unwrap();
+    *old_mesh = mesh;
+    laser.end = end;
+
+    let material = match laser.laser_type {
+        LaserType::Red => materials.laser_red.clone(),
+        LaserType::Blue => materials.laser_blue.clone(),
+    };
+
+    let mut old_material = laser_material_q.get_mut(laser_id).unwrap();
+    *old_material = material;
+}
+
 fn compute_laser_path(
+    laser_type: LaserType,
     window: &Window,
     level_size: &Res<LevelSize>,
     start: Coordinate,
     direction: crate::Direction,
     tracker: &Res<EntityTracker>,
     opaque_q: &Query<&Opaque>,
-    refactors_q: &Query<&Refactor>,
+    refactors_q: &mut Query<(Entity, &mut Refactor, &Coordinate)>,
+    refactor_stack: &mut Vec<Entity>,
 ) -> (Path, Coordinate) {
     let mut direction = direction;
     let mut check_coordinate = start + direction.direction();
@@ -78,20 +195,16 @@ fn compute_laser_path(
                     break 'outer;
                 }
 
-                if let Ok(Refactor { main_direction }) = refactors_q.get(*entity) {
-                    let alt_direction = main_direction.rotated_90();
-
-                    let new_direction = if main_direction.rotated_180() == direction {
-                        alt_direction
-                    } else if alt_direction.rotated_180() == direction {
-                        *main_direction
-                    } else {
-                        break 'outer;
-                    };
-                    let screen_space =
-                        coordinate_to_screen_space(check_coordinate, window, level_size);
-                    builder.line_to(point(screen_space.x, screen_space.y));
-                    direction = new_direction;
+                if let Ok((refactor_id, mut refactor, _)) = refactors_q.get_mut(*entity) {
+                    let main_direction = refactor.inbound_main();
+                    let alt_direction = refactor.inbound_alt();
+                    if direction == main_direction {
+                        refactor.inbound_main.insert(laser_type);
+                    } else if direction == alt_direction {
+                        refactor.inbound_alt.insert(laser_type);
+                    }
+                    refactor_stack.push(refactor_id);
+                    break 'outer;
                 }
             }
         }
@@ -103,7 +216,7 @@ fn compute_laser_path(
     (builder.build(), check_coordinate)
 }
 
-fn path_to_mesh(path: &Path) -> Mesh {
+pub fn path_to_mesh(path: &Path) -> Mesh {
     let mut geometry = Geometry::new();
     let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
     let mut tessellator = StrokeTessellator::new();
@@ -128,4 +241,9 @@ fn path_to_mesh(path: &Path) -> Mesh {
     mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, uv);
 
     mesh
+}
+
+pub fn default_mesh() -> Mesh {
+    let path = Path::builder().build();
+    crate::system_stages::laser::path_to_mesh(&path)
 }

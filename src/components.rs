@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use std::collections::HashSet;
 
 use crate::*;
 
@@ -92,15 +93,38 @@ impl Direction {
             Self::Left => Self::Right,
         }
     }
+
+    pub fn rotated_270(&self) -> Direction {
+        match self {
+            Self::Up => Self::Left,
+            Self::Right => Self::Up,
+            Self::Down => Self::Right,
+            Self::Left => Self::Down,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
 pub struct Jimbo;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum LaserType {
     Red,
     Blue,
+}
+
+impl LaserType {
+    pub fn amalgamate(set: &HashSet<LaserType>) -> LaserType {
+        match (
+            set.contains(&LaserType::Red),
+            set.contains(&LaserType::Blue),
+        ) {
+            (true, true) => unimplemented!("1"),
+            (true, false) => LaserType::Red,
+            (false, true) => LaserType::Blue,
+            (false, false) => unimplemented!("2"),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -138,9 +162,31 @@ pub struct Orb {
     pub orb_type: LaserType,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct Refactor {
     pub main_direction: crate::Direction,
+    pub outbound_main: Entity,
+    pub outbound_alt: Entity,
+    pub inbound_main: HashSet<LaserType>,
+    pub inbound_alt: HashSet<LaserType>,
+}
+
+impl Refactor {
+    pub fn inbound_main(&self) -> crate::Direction {
+        self.main_direction.rotated_180()
+    }
+
+    pub fn inbound_alt(&self) -> crate::Direction {
+        self.main_direction.rotated_270()
+    }
+
+    pub fn outbound_main(&self) -> crate::Direction {
+        self.main_direction
+    }
+
+    pub fn outbound_alt(&self) -> crate::Direction {
+        self.main_direction.rotated_90()
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
