@@ -87,7 +87,7 @@ fn laser_path_adjustment(
                 laser.laser_type = laser_type;
                 update_laser(
                     &mut meshes,
-                    refactor.outbound_main,
+                    refactor.outbound_alt,
                     &mut laser,
                     laser_mesh,
                     window,
@@ -179,7 +179,6 @@ fn compute_laser_path(
     refactors_q: &mut Query<(Entity, &mut Refactor, &Coordinate)>,
     refactor_stack: &mut Vec<Entity>,
 ) -> (Path, Coordinate) {
-    let mut direction = direction;
     let mut check_coordinate = start + direction.direction();
     let mut builder = Path::builder();
     let screen_space_start = coordinate_to_screen_space(start, window, level_size);
