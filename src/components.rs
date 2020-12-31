@@ -118,8 +118,9 @@ pub struct Jimbo;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum LaserType {
-    Red,
     Blue,
+    Purple,
+    Red,
 }
 
 impl LaserType {
@@ -127,11 +128,16 @@ impl LaserType {
         match (
             set.contains(&LaserType::Red),
             set.contains(&LaserType::Blue),
+            set.contains(&LaserType::Purple),
         ) {
-            (true, true) => unimplemented!("1"),
-            (true, false) => LaserType::Red,
-            (false, true) => LaserType::Blue,
-            (false, false) => unimplemented!("2"),
+            (true, true, true)
+            | (true, true, false)
+            | (true, false, true)
+            | (false, true, true)
+            | (false, false, true) => LaserType::Purple,
+            (true, false, false) => LaserType::Red,
+            (false, true, false) => LaserType::Blue,
+            (false, false, false) => unimplemented!("2"),
         }
     }
 }

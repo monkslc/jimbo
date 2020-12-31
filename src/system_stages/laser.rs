@@ -153,6 +153,7 @@ fn update_laser(
     let material = match laser.laser_type {
         LaserType::Red => materials.laser_red.clone(),
         LaserType::Blue => materials.laser_blue.clone(),
+        LaserType::Purple => materials.laser_purple.clone(),
     };
 
     let mut old_material = laser_material_q.get_mut(laser_id).unwrap();

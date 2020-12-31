@@ -50,6 +50,11 @@ pub fn orb_update(
                 materials.orb_blue_activated.clone(),
                 materials.orb_blue_destroyed.clone(),
             ),
+            LaserType::Purple => (
+                materials.orb_purple_deactivated.clone(),
+                materials.orb_purple_activated.clone(),
+                materials.orb_purple_destroyed.clone(),
+            ),
         };
 
         for laser in laser_q.iter() {

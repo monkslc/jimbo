@@ -87,6 +87,7 @@ pub fn load_level(
                     let laser_type = match chars.next().expect("expected laser type") {
                         'R' => LaserType::Red,
                         'B' => LaserType::Blue,
+                        'P' => LaserType::Purple,
                         t => panic!("Unrecognized laser type: {}", t),
                     };
                     spawn_orb(commands, materials, laser_type, coord);
@@ -196,6 +197,10 @@ pub fn spawn_laser_source(
         (LaserType::Blue, crate::Direction::Down) => materials.laser_source_blue_down.clone(),
         (LaserType::Blue, crate::Direction::Left) => materials.laser_source_blue_left.clone(),
         (LaserType::Blue, crate::Direction::Up) => materials.laser_source_blue_up.clone(),
+        (LaserType::Purple, crate::Direction::Up) => materials.laser_source_purple_up.clone(),
+        (LaserType::Purple, crate::Direction::Right) => materials.laser_source_purple_right.clone(),
+        (LaserType::Purple, crate::Direction::Down) => materials.laser_source_purple_down.clone(),
+        (LaserType::Purple, crate::Direction::Left) => materials.laser_source_purple_left.clone(),
     };
 
     let source = commands
@@ -235,6 +240,7 @@ pub fn spawn_laser(
     let material = match laser_type {
         LaserType::Red => materials.laser_red.clone(),
         LaserType::Blue => materials.laser_blue.clone(),
+        LaserType::Purple => materials.laser_purple.clone(),
     };
     let mesh = system_stages::laser::default_mesh();
     let mesh = meshes.add(mesh);
@@ -287,6 +293,7 @@ pub fn spawn_orb(
     let material = match laser_type {
         LaserType::Red => materials.orb_red_deactivated.clone(),
         LaserType::Blue => materials.orb_blue_deactivated.clone(),
+        LaserType::Purple => materials.orb_purple_deactivated.clone(),
     };
     commands
         .spawn(SpriteBundle {
