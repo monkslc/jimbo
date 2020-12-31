@@ -144,7 +144,6 @@ fn detect_level_select(
     for (interaction, level_change) in interaction_q.iter() {
         match *interaction {
             Interaction::Clicked => {
-                println!("Ok it was clicked though....");
                 my_events.send(*level_change);
             }
             Interaction::Hovered => {
