@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-
+use std::collections::HashMap;
 use std::path::Path as FilePath;
 
 use crate::*;
@@ -42,7 +42,7 @@ fn create_materials(
     mut materials: ResMut<Assets<ColorMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    commands.insert_resource(Materials {
+    let mut mats = Materials {
         crate_material: materials.add(asset_server.load("crate.png").into()),
         jimbo: materials.add(asset_server.load("jimbo.png").into()),
         tile: materials.add(Color::rgb_u8(2, 95, 19).into()),
@@ -70,6 +70,19 @@ fn create_materials(
         refactor_down: materials.add(asset_server.load("refactor-down.png").into()),
         refactor_left: materials.add(asset_server.load("refactor-left.png").into()),
         refactor_up: materials.add(asset_server.load("refactor-up.png").into()),
+        refactors: HashMap::new(),
         wall: materials.add(asset_server.load("wall.png").into()),
-    });
+    };
+
+    for entry in std::fs::read_dir("assets").unwrap() {
+        let entry = entry.unwrap();
+        let asset = entry.file_name();
+        let material_name = asset.to_str().unwrap();
+        if material_name.starts_with("refactor") {
+            let material = materials.add(asset_server.load(material_name).into());
+            mats.refactors.insert(material_name.to_string(), material);
+        }
+    }
+
+    commands.insert_resource(mats);
 }

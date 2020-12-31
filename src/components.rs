@@ -102,6 +102,15 @@ impl Direction {
             Self::Left => Self::Down,
         }
     }
+
+    pub fn material_name(&self) -> &'static str {
+        match self {
+            crate::Direction::Up => "up",
+            crate::Direction::Right => "right",
+            crate::Direction::Down => "down",
+            crate::Direction::Left => "left",
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -163,30 +172,15 @@ pub struct Orb {
 }
 
 #[derive(Debug, Clone)]
-pub struct Refactor {
-    pub main_direction: crate::Direction,
-    pub outbound_main: Entity,
-    pub outbound_alt: Entity,
-    pub inbound_main: HashSet<LaserType>,
-    pub inbound_alt: HashSet<LaserType>,
+pub struct RefactorDirection {
+    pub direction: crate::Direction,
+    pub inbound_lasers: HashSet<LaserType>,
+    pub outbound_laser: Entity,
 }
 
-impl Refactor {
-    pub fn inbound_main(&self) -> crate::Direction {
-        self.main_direction.rotated_180()
-    }
-
-    pub fn inbound_alt(&self) -> crate::Direction {
-        self.main_direction.rotated_270()
-    }
-
-    pub fn outbound_main(&self) -> crate::Direction {
-        self.main_direction
-    }
-
-    pub fn outbound_alt(&self) -> crate::Direction {
-        self.main_direction.rotated_90()
-    }
+#[derive(Debug, Clone)]
+pub struct Refactor {
+    pub directions: Vec<RefactorDirection>,
 }
 
 #[derive(Debug, Copy, Clone)]

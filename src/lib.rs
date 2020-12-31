@@ -30,5 +30,5 @@ pub static LEVELS: [&str; 10] = [
     "levels/scene-test.lvl",
     "levels/standoff.lvl",
     "levels/trapped-orb.lvl",
-    "",
+    "levels/nand.lvl",
 ];

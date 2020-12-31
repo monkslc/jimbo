@@ -4,6 +4,7 @@ use bevy::render::pipeline::PrimitiveTopology;
 use lyon::math::{point, Point};
 use lyon::path::Path;
 use lyon::tessellation::*;
+use std::collections::HashSet;
 
 use crate::system_stages::screen_transformations::coordinate_to_screen_space;
 use crate::*;
@@ -36,20 +37,15 @@ fn laser_path_adjustment(
     }
 
     for (_, mut refactor, start) in refactor_q.iter_mut() {
-        refactor.inbound_main.clear();
-        refactor.inbound_alt.clear();
-
-        let (_, mut laser, mesh_handle) = lasers_q.get_mut(refactor.outbound_main).unwrap();
-        let old_mesh = meshes.get_mut(mesh_handle).unwrap();
-        let new_mesh = default_mesh();
-        *old_mesh = new_mesh;
-        laser.end = *start;
-
-        let (_, mut laser, mesh_handle) = lasers_q.get_mut(refactor.outbound_alt).unwrap();
-        let old_mesh = meshes.get_mut(mesh_handle).unwrap();
-        let new_mesh = default_mesh();
-        *old_mesh = new_mesh;
-        laser.end = *start;
+        for refactor_direction in refactor.directions.iter_mut() {
+            refactor_direction.inbound_lasers.clear();
+            let (_, mut laser, mesh_handle) =
+                lasers_q.get_mut(refactor_direction.outbound_laser).unwrap();
+            let old_mesh = meshes.get_mut(mesh_handle).unwrap();
+            let new_mesh = default_mesh();
+            *old_mesh = new_mesh;
+            laser.end = *start;
+        }
     }
 
     let window = windows.get_primary().unwrap();
@@ -77,50 +73,45 @@ fn laser_path_adjustment(
 
     while let Some(refactor_id) = laser_direction_changes.pop() {
         if let Ok((_, refactor, coordinate)) = refactor_q.get_mut(refactor_id) {
-            if !refactor.inbound_main.is_empty() && !refactor.inbound_alt.is_empty() {
-                continue;
-            }
+            let available_outbound: Vec<(crate::Direction, Entity)> = refactor
+                .directions
+                .iter()
+                .filter(|d| d.inbound_lasers.is_empty())
+                .map(|d| (d.direction, d.outbound_laser))
+                .collect();
 
-            if !refactor.inbound_main.is_empty() {
-                let laser_type = LaserType::amalgamate(&refactor.inbound_main);
-                let (_, mut laser, laser_mesh) = lasers_q.get_mut(refactor.outbound_alt).unwrap();
+            let laser_types: HashSet<LaserType> =
+                refactor
+                    .directions
+                    .iter()
+                    .fold(HashSet::new(), |mut acc, direction| {
+                        direction.inbound_lasers.iter().for_each(|laser_type| {
+                            acc.insert(*laser_type);
+                        });
+                        acc
+                    });
+            let laser_type = LaserType::amalgamate(&laser_types);
+
+            let start = *coordinate;
+            for (direction, outbound_laser) in available_outbound {
+                let (_, mut laser, laser_mesh) = lasers_q.get_mut(outbound_laser).unwrap();
                 laser.laser_type = laser_type;
                 update_laser(
                     &mut meshes,
-                    refactor.outbound_alt,
+                    outbound_laser,
                     &mut laser,
                     laser_mesh,
                     window,
                     &level_size,
                     &materials,
-                    *coordinate,
-                    refactor.outbound_alt(),
+                    start,
+                    direction,
                     &tracker,
                     &opaque_q,
                     &mut refactor_q,
                     &mut laser_direction_changes,
                     &mut laser_material_q,
-                );
-            } else if !refactor.inbound_alt.is_empty() {
-                let laser_type = LaserType::amalgamate(&refactor.inbound_alt);
-                let (_, mut laser, laser_mesh) = lasers_q.get_mut(refactor.outbound_main).unwrap();
-                laser.laser_type = laser_type;
-                update_laser(
-                    &mut meshes,
-                    refactor.outbound_main,
-                    &mut laser,
-                    laser_mesh,
-                    window,
-                    &level_size,
-                    &materials,
-                    *coordinate,
-                    refactor.outbound_main(),
-                    &tracker,
-                    &opaque_q,
-                    &mut refactor_q,
-                    &mut laser_direction_changes,
-                    &mut laser_material_q,
-                );
+                )
             }
         }
     }
@@ -195,14 +186,14 @@ fn compute_laser_path(
                 }
 
                 if let Ok((refactor_id, mut refactor, _)) = refactors_q.get_mut(*entity) {
-                    let main_direction = refactor.inbound_main();
-                    let alt_direction = refactor.inbound_alt();
-                    if direction == main_direction {
-                        refactor.inbound_main.insert(laser_type);
-                    } else if direction == alt_direction {
-                        refactor.inbound_alt.insert(laser_type);
+                    for refactor_direction in refactor.directions.iter_mut() {
+                        if direction == refactor_direction.direction.rotated_180() {
+                            refactor_direction.inbound_lasers.insert(laser_type);
+                            refactor_stack.push(refactor_id);
+                            break 'outer;
+                        }
                     }
-                    refactor_stack.push(refactor_id);
+
                     break 'outer;
                 }
             }

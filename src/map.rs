@@ -50,14 +50,15 @@ pub fn load_level(
                 "P" => spawn_jimbo(commands, materials, coord),
                 x if x.starts_with('R') => {
                     let mut chars = x.chars().skip(1);
-                    let direction = match chars.next().expect("expected refactor direction") {
+                    let direction = match chars.next().expect("expected splitter direction") {
                         'U' => crate::Direction::Up,
                         'R' => crate::Direction::Right,
                         'D' => crate::Direction::Down,
                         'L' => crate::Direction::Left,
                         d => panic!("Unrecognized direction: {}", d),
                     };
-                    spawn_refactor(commands, materials, meshes, direction, coord);
+                    let directions = vec![direction, direction.rotated_90()];
+                    spawn_refactor(commands, materials, meshes, directions, coord);
                 }
                 x if x.starts_with('O') => {
                     let mut chars = x.chars().skip(1);
@@ -198,9 +199,7 @@ pub fn spawn_laser_source(
         })
         .current_entity()
         .expect("should've had laser source");
-    spawn_laser(
-        commands, materials, meshes, laser_type, direction, coordinate, source,
-    );
+    spawn_laser(commands, materials, meshes, laser_type, coordinate, source);
 }
 
 pub fn spawn_laser(
@@ -208,7 +207,6 @@ pub fn spawn_laser(
     materials: &Res<Materials>,
     meshes: &mut ResMut<Assets<Mesh>>,
     laser_type: LaserType,
-    direction: crate::Direction,
     end: Coordinate,
     source: Entity,
 ) -> Entity {
@@ -295,19 +293,24 @@ pub fn spawn_refactor(
     commands: &mut Commands,
     materials: &Res<Materials>,
     meshes: &mut ResMut<Assets<Mesh>>,
-    direction: crate::Direction,
+    directions: Vec<crate::Direction>,
     coordinate: Coordinate,
 ) {
-    let material = match direction {
-        crate::Direction::Right => materials.refactor_right.clone(),
-        crate::Direction::Down => materials.refactor_down.clone(),
-        crate::Direction::Left => materials.refactor_left.clone(),
-        crate::Direction::Up => materials.refactor_up.clone(),
-    };
+    let mut material_name =
+        directions
+            .iter()
+            .fold(String::from("refactor"), |mut acc, direction| {
+                acc.push('-');
+                acc.push_str(direction.material_name());
+                acc
+            });
+    material_name.push_str(".png");
+
+    let material = materials.refactors.get(&material_name).unwrap();
 
     let source = commands
         .spawn(SpriteBundle {
-            material,
+            material: material.clone(),
             sprite: Sprite {
                 size: Default::default(),
                 resize_mode: SpriteResizeMode::Manual,
@@ -323,55 +326,30 @@ pub fn spawn_refactor(
         })
         .current_entity()
         .unwrap();
-    let mesh = system_stages::laser::default_mesh();
-    let mesh = meshes.add(mesh);
-    commands
-        .spawn(SpriteBundle {
-            material: materials.laser_red.clone(),
-            mesh,
-            sprite: Sprite {
-                size: Vec2::new(1.0, 1.0),
-                resize_mode: SpriteResizeMode::Manual,
-            },
-            ..Default::default()
-        })
-        .with(LevelObject)
-        .with(Laser {
-            source,
-            laser_type: LaserType::Red,
-            end: coordinate,
-        })
-        .current_entity()
-        .unwrap();
 
-    let outbound_main = spawn_laser(
-        commands,
-        materials,
-        meshes,
-        LaserType::Red,
-        direction,
-        coordinate,
-        source,
-    );
-
-    let outbound_alt = spawn_laser(
-        commands,
-        materials,
-        meshes,
-        LaserType::Red,
-        direction,
-        coordinate,
-        source,
-    );
+    let refactor_directions = directions
+        .into_iter()
+        .map(|direction| {
+            let outbound_laser = spawn_laser(
+                commands,
+                materials,
+                meshes,
+                LaserType::Red,
+                coordinate,
+                source,
+            );
+            RefactorDirection {
+                direction,
+                inbound_lasers: HashSet::new(),
+                outbound_laser,
+            }
+        })
+        .collect::<Vec<_>>();
 
     commands.insert_one(
         source,
         Refactor {
-            main_direction: direction,
-            inbound_alt: HashSet::new(),
-            inbound_main: HashSet::new(),
-            outbound_alt,
-            outbound_main,
+            directions: refactor_directions,
         },
     );
 }

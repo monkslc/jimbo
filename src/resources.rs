@@ -39,6 +39,7 @@ pub struct Materials {
     pub refactor_down: Handle<ColorMaterial>,
     pub refactor_left: Handle<ColorMaterial>,
     pub refactor_up: Handle<ColorMaterial>,
+    pub refactors: HashMap<String, Handle<ColorMaterial>>,
     pub wall: Handle<ColorMaterial>,
 }
 
