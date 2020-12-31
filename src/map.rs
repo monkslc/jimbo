@@ -48,6 +48,15 @@ pub fn load_level(
                 "W" => spawn_wall(commands, materials, coord),
                 "C" => spawn_crate(commands, materials, coord),
                 "P" => spawn_jimbo(commands, materials, coord),
+                "X" => {
+                    let directions = vec![
+                        crate::Direction::Up,
+                        crate::Direction::Right,
+                        crate::Direction::Down,
+                        crate::Direction::Left,
+                    ];
+                    spawn_refactor(commands, materials, meshes, directions, coord);
+                }
                 x if x.starts_with('R') => {
                     let mut chars = x.chars().skip(1);
                     let direction = match chars.next().expect("expected splitter direction") {
@@ -58,6 +67,19 @@ pub fn load_level(
                         d => panic!("Unrecognized direction: {}", d),
                     };
                     let directions = vec![direction, direction.rotated_90()];
+                    spawn_refactor(commands, materials, meshes, directions, coord);
+                }
+                x if x.starts_with('S') => {
+                    let mut chars = x.chars().skip(1);
+                    let direction = match chars.next().expect("expected splitter direction") {
+                        'U' => crate::Direction::Up,
+                        'R' => crate::Direction::Right,
+                        'D' => crate::Direction::Down,
+                        'L' => crate::Direction::Left,
+                        d => panic!("Unrecognized direction: {}", d),
+                    };
+                    let directions =
+                        vec![direction, direction.rotated_90(), direction.rotated_180()];
                     spawn_refactor(commands, materials, meshes, directions, coord);
                 }
                 x if x.starts_with('O') => {
