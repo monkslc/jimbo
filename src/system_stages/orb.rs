@@ -11,6 +11,7 @@ pub fn stage() -> SystemStage {
 }
 
 pub fn orb_update(
+    state: Res<AppState>,
     keyboard_input: Res<Input<KeyCode>>,
     materials: Res<Materials>,
     turn_counter: Res<TurnCounter>,
@@ -19,6 +20,11 @@ pub fn orb_update(
     laser_q: Query<&Laser>,
     mut orb_q: Query<(Entity, &mut Orb, &Coordinate, &mut Handle<ColorMaterial>)>,
 ) {
+    match *state {
+        AppState::Level(_) => (),
+        _ => return,
+    }
+
     if laser_changed.iter().next().is_none() {
         return;
     }

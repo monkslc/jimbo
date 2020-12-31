@@ -20,6 +20,7 @@ pub fn stage() -> SystemStage {
 }
 
 fn laser_path_adjustment(
+    state: Res<AppState>,
     mut meshes: ResMut<Assets<Mesh>>,
     windows: Res<Windows>,
     tracker: Res<EntityTracker>,
@@ -32,6 +33,11 @@ fn laser_path_adjustment(
     coordinate_change_q: Query<(), Changed<Coordinate>>,
     mut laser_material_q: Query<&mut Handle<ColorMaterial>>,
 ) {
+    match *state {
+        AppState::Level(_) => (),
+        _ => return,
+    }
+
     if coordinate_change_q.iter().next().is_none() {
         return;
     }

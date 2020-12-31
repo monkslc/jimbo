@@ -7,6 +7,7 @@ pub struct ResourcesPlugin;
 
 impl Plugin for ResourcesPlugin {
     fn build(&self, app: &mut AppBuilder) {
+        app.add_resource(AppState::LevelSelect);
         app.add_resource(EntityTracker::default());
         app.add_resource(LevelSize::default());
         app.add_resource(TurnCounter::default());
@@ -49,6 +50,12 @@ pub struct Materials {
     pub refactor_up: Handle<ColorMaterial>,
     pub refactors: HashMap<String, Handle<ColorMaterial>>,
     pub wall: Handle<ColorMaterial>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum AppState {
+    LevelSelect,
+    Level(usize),
 }
 
 #[derive(Debug, Clone, Default)]

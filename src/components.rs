@@ -199,4 +199,7 @@ pub struct Size {
 pub struct Tile;
 
 #[derive(Debug, Copy, Clone)]
+pub struct UiObject;
+
+#[derive(Debug, Copy, Clone)]
 pub struct Wall;

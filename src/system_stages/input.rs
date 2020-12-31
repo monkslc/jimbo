@@ -9,11 +9,13 @@ pub fn stage() -> SystemStage {
     system.add_system(jimbo_movement.system());
     system.add_system(undo.system());
     system.add_system(detect_level_change.system());
-    system.add_system(read_level_change_event.system());
+    system.add_system(detect_level_select.system());
+    system.add_system(app_state_change_event.system());
     system
 }
 
 fn jimbo_movement(
+    state: Res<AppState>,
     keyboard_input: Res<Input<KeyCode>>,
     tracker: Res<EntityTracker>,
     level_size: Res<LevelSize>,
@@ -25,6 +27,11 @@ fn jimbo_movement(
         Query<&Movable>,
     )>,
 ) {
+    match *state {
+        AppState::Level(_) => (),
+        _ => return,
+    }
+
     let (jimbo, coordinate) = q.q0().iter().next().expect("Should always have jimbo");
 
     let direction = if keyboard_input.just_pressed(KeyCode::Left) {
@@ -85,6 +92,15 @@ fn jimbo_movement(
 }
 
 fn undo(world: &mut World, resources: &mut Resources) {
+    let state = resources
+        .get::<AppState>()
+        .expect("App should always have a state");
+
+    match *state {
+        AppState::Level(_) => (),
+        _ => return,
+    }
+
     let input = resources
         .get::<Input<KeyCode>>()
         .expect("Input resource should have been available");
@@ -116,67 +132,110 @@ fn undo(world: &mut World, resources: &mut Resources) {
     current_turn.0 -= 1;
 }
 
-fn detect_level_change(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut my_events: ResMut<Events<LevelChangeEvent>>,
+fn detect_level_select(
+    state: Res<AppState>,
+    mut my_events: ResMut<Events<AppStateChangeEvent>>,
+    interaction_q: Query<(&Interaction, &AppStateChangeEvent), With<Button>>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::Key1) {
-        println!("Changing to level 1");
-        my_events.send(LevelChangeEvent(0));
-    } else if keyboard_input.just_pressed(KeyCode::Key2) {
-        println!("Changing to level 2");
-        my_events.send(LevelChangeEvent(1));
-    } else if keyboard_input.just_pressed(KeyCode::Key3) {
-        println!("Changing to level 3");
-        my_events.send(LevelChangeEvent(2));
-    } else if keyboard_input.just_pressed(KeyCode::Key4) {
-        println!("Changing to level 4");
-        my_events.send(LevelChangeEvent(3));
-    } else if keyboard_input.just_pressed(KeyCode::Key5) {
-        println!("Changing to level 5");
-        my_events.send(LevelChangeEvent(4));
-    } else if keyboard_input.just_pressed(KeyCode::Key6) {
-        println!("Changing to level 6");
-        my_events.send(LevelChangeEvent(5));
-    } else if keyboard_input.just_pressed(KeyCode::Key7) {
-        println!("Changing to level 7");
-        my_events.send(LevelChangeEvent(6));
-    } else if keyboard_input.just_pressed(KeyCode::Key8) {
-        println!("Changing to level 8");
-        my_events.send(LevelChangeEvent(7));
-    } else if keyboard_input.just_pressed(KeyCode::Key9) {
-        println!("Changing to level 9");
-        my_events.send(LevelChangeEvent(8));
-    } else if keyboard_input.just_pressed(KeyCode::Key0) {
-        println!("Changing to level 10");
-        my_events.send(LevelChangeEvent(9));
+    if *state != AppState::LevelSelect {
+        return;
+    }
+
+    for (interaction, level_change) in interaction_q.iter() {
+        match *interaction {
+            Interaction::Clicked => {
+                println!("Ok it was clicked though....");
+                my_events.send(*level_change);
+            }
+            Interaction::Hovered => {
+                // Do nothing... for now
+            }
+            Interaction::None => {
+                // Do nothing... for now
+            }
+        }
     }
 }
 
-fn read_level_change_event(
+fn detect_level_change(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut my_events: ResMut<Events<AppStateChangeEvent>>,
+) {
+    let level = if keyboard_input.just_pressed(KeyCode::Key1) {
+        0
+    } else if keyboard_input.just_pressed(KeyCode::Key2) {
+        1
+    } else if keyboard_input.just_pressed(KeyCode::Key3) {
+        2
+    } else if keyboard_input.just_pressed(KeyCode::Key4) {
+        3
+    } else if keyboard_input.just_pressed(KeyCode::Key5) {
+        4
+    } else if keyboard_input.just_pressed(KeyCode::Key6) {
+        5
+    } else if keyboard_input.just_pressed(KeyCode::Key7) {
+        6
+    } else if keyboard_input.just_pressed(KeyCode::Key8) {
+        7
+    } else if keyboard_input.just_pressed(KeyCode::Key9) {
+        8
+    } else if keyboard_input.just_pressed(KeyCode::Key0) {
+        9
+    } else if keyboard_input.just_pressed(KeyCode::Escape) {
+        my_events.send(AppStateChangeEvent(AppState::LevelSelect));
+        return;
+    } else {
+        return;
+    };
+
+    my_events.send(AppStateChangeEvent(AppState::Level(level)));
+}
+
+fn app_state_change_event(
     commands: &mut Commands,
+    mut state: ResMut<AppState>,
+    mut event_reader: Local<EventReader<AppStateChangeEvent>>,
+    events: Res<Events<AppStateChangeEvent>>,
+    ui_objects: Query<Entity, With<UiObject>>,
+    level_objects: Query<Entity, With<LevelObject>>,
     materials: Res<Materials>,
     mut level_size: ResMut<LevelSize>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut turn_counter: ResMut<TurnCounter>,
     mut undo_buffer: ResMut<UndoBuffer>,
-    mut event_reader: Local<EventReader<LevelChangeEvent>>,
-    events: Res<Events<LevelChangeEvent>>,
-    entities: Query<Entity, With<LevelObject>>,
+    asset_server: Res<AssetServer>,
+    color_materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    if let Some(latest_change) = event_reader.latest(&events) {
-        turn_counter.0 = 0;
-        undo_buffer.0.clear();
-        for ent in entities.iter() {
-            commands.despawn(ent);
-        }
+    if let Some(state_change) = event_reader.latest(&events) {
+        match state_change.0 {
+            AppState::Level(level_index) => {
+                for ent in ui_objects.iter() {
+                    commands.despawn_recursive(ent);
+                }
 
-        map::load_level(
-            std::path::Path::new(LEVELS[latest_change.0]),
-            commands,
-            &materials,
-            &mut meshes,
-            &mut level_size,
-        );
+                for ent in level_objects.iter() {
+                    commands.despawn_recursive(ent);
+                }
+
+                turn_counter.0 = 0;
+                undo_buffer.0.clear();
+
+                map::load_level(
+                    std::path::Path::new(LEVELS[level_index]),
+                    commands,
+                    &materials,
+                    &mut meshes,
+                    &mut level_size,
+                );
+            }
+            AppState::LevelSelect => {
+                for ent in level_objects.iter() {
+                    commands.despawn_recursive(ent);
+                }
+
+                startup_systems::load_level_selector(commands, asset_server, color_materials);
+            }
+        }
+        *state = state_change.0;
     }
 }

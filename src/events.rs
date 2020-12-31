@@ -1,11 +1,14 @@
 use bevy::prelude::*;
 
+use crate::*;
+
 pub struct EventPlugin;
 
 impl Plugin for EventPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_event::<LevelChangeEvent>();
+        app.add_event::<AppStateChangeEvent>();
     }
 }
 
-pub struct LevelChangeEvent(pub usize);
+#[derive(Debug, Copy, Clone)]
+pub struct AppStateChangeEvent(pub AppState);

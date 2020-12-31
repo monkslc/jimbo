@@ -10,7 +10,16 @@ pub fn stage() -> SystemStage {
     stage
 }
 
-pub fn level_completed(laser_changed: Query<(), Changed<Laser>>, orbs: Query<&Orb>) {
+pub fn level_completed(
+    state: Res<AppState>,
+    laser_changed: Query<(), Changed<Laser>>,
+    orbs: Query<&Orb>,
+) {
+    match *state {
+        AppState::Level(_) => (),
+        _ => return,
+    }
+
     if laser_changed.iter().next().is_none() {
         return;
     }

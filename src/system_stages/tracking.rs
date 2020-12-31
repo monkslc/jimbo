@@ -9,9 +9,15 @@ pub fn stage() -> SystemStage {
 }
 
 pub fn track_coordinates(
+    state: Res<AppState>,
     mut tracker: ResMut<EntityTracker>,
     coordinate: Query<(Entity, &Coordinate)>,
 ) {
+    match *state {
+        AppState::Level(_) => (),
+        _ => return,
+    }
+
     tracker.0.clear();
     for (ent, coor) in coordinate.iter() {
         let entities = tracker.0.entry(*coor).or_insert(Vec::new());

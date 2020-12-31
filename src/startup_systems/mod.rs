@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use std::collections::HashMap;
-use std::path::Path as FilePath;
 
 use crate::*;
 
@@ -13,28 +12,104 @@ impl Plugin for StartupSystemPlugin {
         app.add_startup_stage("materials", SystemStage::parallel());
         app.add_startup_system_to_stage("materials", create_materials.system());
 
-        app.add_startup_stage("initial_level", SystemStage::serial());
-        app.add_startup_system_to_stage("initial_level", initial_level.system());
+        app.add_startup_stage("initial_load", SystemStage::serial());
+        app.add_startup_system_to_stage("initial_load", load_level_selector.system());
     }
+}
+
+pub fn load_level_selector(
+    commands: &mut Commands,
+    asset_server: Res<AssetServer>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    commands
+        .spawn(CameraUiBundle::default())
+        .spawn(NodeBundle {
+            style: Style {
+                size: bevy::prelude::Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                flex_direction: FlexDirection::ColumnReverse,
+                justify_content: JustifyContent::FlexStart,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            material: materials.add(Color::NONE.into()),
+            ..Default::default()
+        })
+        .with(UiObject)
+        .with_children(|parent| {
+            parent.spawn(TextBundle {
+                style: Style {
+                    margin: Rect::all(Val::Px(20.0)),
+                    ..Default::default()
+                },
+                text: Text {
+                    value: "One Laser".to_string(),
+                    font: asset_server.load("fonts/Helvetica.ttf"),
+                    style: TextStyle {
+                        font_size: 30.0,
+                        color: Color::WHITE,
+                        alignment: TextAlignment {
+                            horizontal: HorizontalAlign::Center,
+                            vertical: VerticalAlign::Center,
+                        },
+                    },
+                },
+                ..Default::default()
+            });
+        })
+        .with_children(|parent| {
+            parent
+                .spawn(NodeBundle {
+                    style: Style {
+                        size: bevy::prelude::Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                        flex_direction: FlexDirection::Row,
+                        justify_content: JustifyContent::FlexStart,
+                        align_items: AlignItems::FlexEnd,
+                        flex_wrap: FlexWrap::WrapReverse,
+                        ..Default::default()
+                    },
+                    material: materials.add(Color::NONE.into()),
+                    ..Default::default()
+                })
+                .with_children(|parent| {
+                    for (level_index, _) in LEVELS.iter().enumerate() {
+                        parent
+                            .spawn(ButtonBundle {
+                                style: Style {
+                                    size: bevy::prelude::Size::new(Val::Px(200.0), Val::Px(200.0)),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    margin: Rect::all(Val::Px(10.0)),
+                                    ..Default::default()
+                                },
+                                material: materials.add(Color::rgb(0.6, 0.2, 0.2).into()),
+                                ..Default::default()
+                            })
+                            .with(AppStateChangeEvent(AppState::Level(level_index)))
+                            .with_children(|parent| {
+                                parent.spawn(TextBundle {
+                                    text: Text {
+                                        value: (level_index + 1).to_string(),
+                                        font: asset_server.load("fonts/Helvetica.ttf"),
+                                        style: TextStyle {
+                                            font_size: 20.0,
+                                            color: Color::WHITE,
+                                            alignment: TextAlignment {
+                                                horizontal: HorizontalAlign::Center,
+                                                vertical: VerticalAlign::Center,
+                                            },
+                                        },
+                                    },
+                                    ..Default::default()
+                                });
+                            });
+                    }
+                });
+        });
 }
 
 fn initial_setup(commands: &mut Commands) {
     commands.spawn(Camera2dBundle::default());
-}
-
-fn initial_level(
-    commands: &mut Commands,
-    materials: Res<Materials>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut level_size: ResMut<LevelSize>,
-) {
-    map::load_level(
-        FilePath::new("levels/1.lvl"),
-        commands,
-        &materials,
-        &mut meshes,
-        &mut level_size,
-    );
 }
 
 fn create_materials(

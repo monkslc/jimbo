@@ -12,10 +12,16 @@ pub fn stage() -> SystemStage {
 }
 
 fn size_scaling(
+    state: Res<AppState>,
     windows: Res<Windows>,
     level_size: Res<LevelSize>,
     mut q: Query<(&crate::Size, &mut Sprite)>,
 ) {
+    match *state {
+        AppState::Level(_) => (),
+        _ => return,
+    }
+
     let window = windows.get_primary().unwrap();
     let tile_size = get_tile_size(window, &level_size);
     for (sprite_size, mut sprite) in q.iter_mut() {
@@ -27,10 +33,16 @@ fn size_scaling(
 }
 
 fn position_translation(
+    state: Res<AppState>,
     windows: Res<Windows>,
     level_size: Res<LevelSize>,
     mut q: Query<(&Coordinate, &mut Transform)>,
 ) {
+    match *state {
+        AppState::Level(_) => (),
+        _ => return,
+    }
+
     let window = windows.get_primary().unwrap();
     let tile_size = get_tile_size(window, &level_size);
     let bottom_left = Vec2::new(window.width() as f32 / -2.0, window.height() as f32 / -2.0);
