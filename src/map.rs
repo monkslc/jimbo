@@ -267,7 +267,7 @@ pub fn spawn_laser(
 pub fn spawn_jimbo(commands: &mut Commands, materials: &Res<Materials>, coordinate: Coordinate) {
     commands
         .spawn(SpriteBundle {
-            material: materials.jimbo.clone(),
+            material: materials.jimbo_down.clone(),
             sprite: Sprite {
                 size: Default::default(),
                 resize_mode: SpriteResizeMode::Manual,
@@ -279,9 +279,10 @@ pub fn spawn_jimbo(commands: &mut Commands, materials: &Res<Materials>, coordina
         .with(Opaque)
         .with(coordinate)
         .with(crate::Size {
-            width: 0.75,
-            height: 0.75,
-        });
+            width: 1.0,
+            height: 1.0,
+        })
+        .with(Facing(crate::Direction::Down));
 }
 
 pub fn spawn_orb(

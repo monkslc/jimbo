@@ -19,10 +19,11 @@ fn jimbo_movement(
     keyboard_input: Res<Input<KeyCode>>,
     tracker: Res<EntityTracker>,
     level_size: Res<LevelSize>,
+    materials: Res<Materials>,
     mut turn_counter: ResMut<TurnCounter>,
     mut undo_buffer: ResMut<UndoBuffer>,
     mut q: QuerySet<(
-        Query<(Entity, &Coordinate), With<Jimbo>>,
+        Query<(Entity, &Coordinate, &mut Handle<ColorMaterial>), With<Jimbo>>,
         Query<&mut Coordinate>,
         Query<&Movable>,
     )>,
@@ -32,20 +33,25 @@ fn jimbo_movement(
         _ => return,
     }
 
-    let (jimbo, coordinate) = q.q0().iter().next().expect("Should always have jimbo");
+    let (jimbo, coordinate, mut material) = q
+        .q0_mut()
+        .iter_mut()
+        .next()
+        .expect("Should always have jimbo");
 
-    let direction = if keyboard_input.just_pressed(KeyCode::Left) {
-        IVec2::new(-1, 0)
+    let (direction, new_material) = if keyboard_input.just_pressed(KeyCode::Left) {
+        (IVec2::new(-1, 0), materials.jimbo_left.clone())
     } else if keyboard_input.just_pressed(KeyCode::Right) {
-        IVec2::new(1, 0)
+        (IVec2::new(1, 0), materials.jimbo_right.clone())
     } else if keyboard_input.just_pressed(KeyCode::Down) {
-        IVec2::new(0, -1)
+        (IVec2::new(0, -1), materials.jimbo_down.clone())
     } else if keyboard_input.just_pressed(KeyCode::Up) {
-        IVec2::new(0, 1)
+        (IVec2::new(0, 1), materials.jimbo_up.clone())
     } else {
         return;
     };
     turn_counter.0 += 1;
+    *material = new_material;
 
     let mut check_coordinate = *coordinate + direction;
     let mut move_entities = vec![jimbo];

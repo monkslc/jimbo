@@ -119,7 +119,10 @@ fn create_materials(
 ) {
     let mut mats = Materials {
         crate_material: materials.add(asset_server.load("crate.png").into()),
-        jimbo: materials.add(asset_server.load("jimbo.png").into()),
+        jimbo_down: materials.add(asset_server.load("character-down.png").into()),
+        jimbo_left: materials.add(asset_server.load("character-left.png").into()),
+        jimbo_up: materials.add(asset_server.load("character-up.png").into()),
+        jimbo_right: materials.add(asset_server.load("character-right.png").into()),
         tile: materials.add(Color::rgb_u8(2, 95, 19).into()),
         laser_blue: materials.add(Color::rgb_u8(30, 30, 255).into()),
         laser_purple: materials.add(Color::rgb_u8(150, 30, 255).into()),

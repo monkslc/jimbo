@@ -18,7 +18,10 @@ impl Plugin for ResourcesPlugin {
 #[derive(Debug, Clone, Default)]
 pub struct Materials {
     pub crate_material: Handle<ColorMaterial>,
-    pub jimbo: Handle<ColorMaterial>,
+    pub jimbo_down: Handle<ColorMaterial>,
+    pub jimbo_right: Handle<ColorMaterial>,
+    pub jimbo_left: Handle<ColorMaterial>,
+    pub jimbo_up: Handle<ColorMaterial>,
     pub tile: Handle<ColorMaterial>,
     pub laser_blue: Handle<ColorMaterial>,
     pub laser_purple: Handle<ColorMaterial>,
