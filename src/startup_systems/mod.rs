@@ -124,9 +124,9 @@ fn create_materials(
         jimbo_up: materials.add(asset_server.load("character-up.png").into()),
         jimbo_right: materials.add(asset_server.load("character-right.png").into()),
         tile: materials.add(Color::rgb_u8(2, 95, 19).into()),
-        laser_blue: materials.add(Color::rgb_u8(30, 30, 255).into()),
-        laser_purple: materials.add(Color::rgb_u8(150, 30, 255).into()),
-        laser_red: materials.add(Color::rgb_u8(255, 30, 30).into()),
+        laser_blue: materials.add(Color::rgb_u8(24, 107, 255).into()),
+        laser_purple: materials.add(Color::rgb_u8(112, 8, 192).into()),
+        laser_red: materials.add(Color::rgb_u8(232, 39, 39).into()),
         laser_source_blue_right: materials
             .add(asset_server.load("laser-source-blue-right.png").into()),
         laser_source_blue_down: materials
