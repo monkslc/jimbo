@@ -281,8 +281,7 @@ pub fn spawn_jimbo(commands: &mut Commands, materials: &Res<Materials>, coordina
         .with(crate::Size {
             width: 1.0,
             height: 1.0,
-        })
-        .with(Facing(crate::Direction::Down));
+        });
 }
 
 pub fn spawn_orb(
